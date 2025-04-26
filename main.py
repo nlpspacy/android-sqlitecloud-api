@@ -33,52 +33,34 @@ async def query_sql(request: Request):
     formatted = [dict(zip(columns, row)) for row in rows]
     return {"success": True, "rows": formatted}
 
-# ✅ Create user: clone data into play_character_user
 @app.post("/create_user")
-async def create_user(request: Request):
-    data = await request.json()
-    username = data.get("username")
+async def create_user(payload: dict):
+    username = payload.get("username")
     if not username:
-        raise HTTPException(status_code=400, detail="Username is required")
-    
-    conn = get_connection()
+        return {"status": "error", "message": "Username required"}
+
+    conn = sqlitecloud.connect(DB_URL)
     cursor = conn.cursor()
 
-    # Insert cloned records
-    cursor.execute(f"""
-        INSERT INTO play_character_user (
-            play_code,
-            character_nr,
-            character_full_name,
-            character_short_name,
-            character_description,
-            is_a_group,
-            is_in_group,
-            voice,
-            text_color,
-            voice_pace,
-            username,
-            is_user
-        )
-        SELECT 
-            play_code,
-            character_nr,
-            character_full_name,
-            character_short_name,
-            character_description,
-            is_a_group,
-            is_in_group,
-            voice,
-            text_color,
-            voice_pace,
-            '{username}',
-            0
+    # ✅ 1. Check if user already exists
+    cursor.execute("SELECT 1 FROM play_character_user WHERE username = ?", (username,))
+    exists = cursor.fetchone()
+
+    if exists:
+        conn.close()
+        return {"status": "ok", "message": "User already exists"}
+
+    # ✅ 2. Otherwise clone from play_character
+    cursor.execute("""
+        INSERT INTO play_character_user (play_code, character_nr, character_full_name, character_short_name, character_description, is_a_group, is_in_group, is_user, voice, text_color, voice_pace, username)
+        SELECT play_code, character_nr, character_full_name, character_short_name, character_description, is_a_group, is_in_group, is_user, voice, text_color, voice_pace, ?
         FROM play_character
-    """)
+    """, (username,))
+
     conn.commit()
     conn.close()
 
-    return {"success": True, "message": f"User {username} created successfully."}
+    return {"status": "ok", "message": "User created"}
 
 # ✅ Update selection when checkbox toggled
 @app.post("/update_selection")
