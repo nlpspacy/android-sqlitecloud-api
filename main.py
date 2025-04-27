@@ -1,7 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 import sqlitecloud
-import os
 
 app = FastAPI()
 
@@ -15,39 +14,24 @@ app.add_middleware(
 
 DB_URL = "sqlitecloud://cgdjyovjhk.g2.sqlite.cloud:8860/play_navigation.db?apikey=SFR0f2mYTxb3bbOiaALxEyatvEt2WDn5hYygAXiuE2o"
 
-@app.post("/create_user")
-async def create_user(request: Request):
+# ✅ Add this new /query endpoint
+@app.post("/query")
+async def run_sql_query(request: Request):
     data = await request.json()
-    username = data.get("username")
-
-    if not username:
-        return {"success": False, "message": "Username required"}
-
-    conn = sqlitecloud.connect(DB_URL)
-    cursor = conn.cursor()
+    sql = data.get("sql")
 
     try:
-        # Check if username already exists
-        check_sql = "SELECT 1 FROM play_character_user WHERE username = ? LIMIT 1;"
-        cursor.execute(check_sql, (username,))
-        result = cursor.fetchone()
+        conn = sqlitecloud.connect(DB_URL)
+        cursor = conn.execute(sql)
+        columns = [description[0] for description in cursor.description]
+        rows = cursor.fetchall()
 
-        if result:
-            return {"success": False, "message": "Username already exists"}
-
-        # Clone play_character into play_character_user for new user
-        insert_sql = """
-            INSERT INTO play_character_user (play_code, character_nr, character_full_name, character_short_name, character_description, is_a_group, username, is_user)
-            SELECT play_code, character_nr, character_full_name, character_short_name, character_description, is_a_group, ?, 0
-            FROM play_character;
-        """
-        cursor.execute(insert_sql, (username,))
-        conn.commit()
-
-        return {"success": True, "message": "User created successfully"}
-
-    except Exception as e:
-        return {"success": False, "message": str(e)}
-
-    finally:
+        # Reformat to match the expected structure
+        response_data = {
+            "columns": columns,
+            "values": [list(row) for row in rows]
+        }
         conn.close()
+        return response_data
+    except Exception as e:
+        return {"error": str(e)}
