@@ -12,7 +12,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DB_URL = "sqlitecloud://<your-cloud-url>.sqlite.cloud:8860/play_navigation.db?apikey=<your-api-key>"
+DB_URL = "sqlitecloud://cgdjyovjhk.g2.sqlite.cloud:8860/play_navigation.db?apikey=SFR0f2mYTxb3bbOiaALxEyatvEt2WDn5hYygAXiuE2o"
 
 @app.post("/query")
 async def query_sql(request: Request):
