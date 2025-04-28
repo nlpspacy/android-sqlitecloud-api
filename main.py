@@ -38,7 +38,7 @@ async def query_sql(request: Request):
         return {
             "success": True,
             "columns": columns,   # ✅ Include columns!
-            "rows": result_rows   # ✅ Include rows!
+            "rows": rows   # ✅ Include rows!
         }
     except Exception as e:
         return {"success": False, "error": str(e)}
