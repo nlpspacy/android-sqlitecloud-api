@@ -25,7 +25,7 @@ async def query_sql(payload: dict):
 
         rows = cursor.fetchall()
 
-        # ⚡ Correct format: values = list of lists
+        # Correct format: values = list of lists
         values = []
         if cursor.description:
             col_names = [description[0] for description in cursor.description]
@@ -37,7 +37,7 @@ async def query_sql(payload: dict):
         return {
             "success": True,
             "columns": [desc[0] for desc in cursor.description] if cursor.description else [],
-            "values": values  # ✅ Proper list-of-lists format
+            "values": values  # Proper list-of-lists format
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
