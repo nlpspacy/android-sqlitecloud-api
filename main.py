@@ -35,6 +35,10 @@ async def query_sql(request: Request):
 
         conn.close()
 
-        return {"success": True, "rows": rows}
+        return {
+            "success": True,
+            "columns": columns,   # ✅ Include columns!
+            "rows": result_rows   # ✅ Include rows!
+        }
     except Exception as e:
         return {"success": False, "error": str(e)}
