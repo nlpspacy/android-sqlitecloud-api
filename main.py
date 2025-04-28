@@ -15,30 +15,30 @@ app.add_middleware(
 DB_URL = "sqlitecloud://cgdjyovjhk.g2.sqlite.cloud:8860/play_navigation.db?apikey=SFR0f2mYTxb3bbOiaALxEyatvEt2WDn5hYygAXiuE2o"
 
 @app.post("/query")
-async def query_sql(request: Request):
+async def query_sql(payload: dict):
+    sql = payload.get("sql")
+    if not sql:
+        raise HTTPException(status_code=400, detail="SQL statement required")
     try:
-        body = await request.json()
-        sql = body.get("sql")
         conn = sqlitecloud.connect(DB_URL)
         cursor = conn.execute(sql)
-        columns = [description[0] for description in cursor.description]
 
-        rows = []
-        for row in cursor.fetchall():
-            row_data = dict(zip(columns, row))
+        rows = cursor.fetchall()
 
-            # Safely handle voice fields even if missing
-            row_data["voice_model"] = row_data.get("voice_model", "")
-            row_data["voice_instructions"] = row_data.get("voice_instructions", "")
-
-            rows.append(row_data)
+        # ⚡ Correct format: values = list of lists
+        values = []
+        if cursor.description:
+            col_names = [description[0] for description in cursor.description]
+            for row in rows:
+                values.append([row.get(col, None) for col in col_names])
 
         conn.close()
 
         return {
             "success": True,
-            "columns": columns,   # ✅ Include columns!
-            "values": rows   # ✅ Include rows!
+            "columns": [desc[0] for desc in cursor.description] if cursor.description else [],
+            "values": values  # ✅ Proper list-of-lists format
         }
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
+
