@@ -41,4 +41,18 @@ async def query_sql(request: Request):
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+@app.post("/insert")
+async def insert_sql(request: Request):
+    try:
+        data = await request.json()
+        sql = data["sql"]
 
+        # Connect and execute the insert/update/delete SQL
+        conn = sqlitecloud.connect(DB_URL)
+        conn.execute(sql)
+        conn.commit()  # optional, depending on driver settings
+        conn.close()
+
+        return {"success": True, "message": "Insert executed successfully."}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
